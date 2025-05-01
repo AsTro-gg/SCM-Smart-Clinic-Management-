@@ -9,8 +9,13 @@ class User(AbstractUser):
         ('doctor','Doctor'),
         ('patient','Patient')
     ]
-
+    email = models.EmailField(unique=True)
+    address = models.CharField(max_length=300)
+    contacts = models.IntegerField()
     role = models.CharField(max_length=30,choices=ROLE_CHOICES)
+
+    USERNAME_FIELD ='email'
+    REQUIRED_FIELDS =['username','address','contacts']
 
     def __str__(self):
         return f"({self.role})-{self.username}"
