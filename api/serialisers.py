@@ -16,5 +16,6 @@ class UserSerialiser(serializers.ModelSerializer):
             contacts=validated_data['contacts']
         )
         return user
+    
 
 
