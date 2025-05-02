@@ -14,6 +14,6 @@ urlpatterns = [
     #Patient Homepage  
     path('patient-homepage/',PatientHomepage.as_view(),name='PatientHomepage'),
     path('patient-history/',PatientHistoryView.as_view(),name='PatientHistory'),
-
+    path('patient-appointment/',Appointment.as_view(),name='Appointment'),
 
 ]

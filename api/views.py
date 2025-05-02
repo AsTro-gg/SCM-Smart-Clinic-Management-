@@ -99,13 +99,11 @@ class PatientHomepage(generics.ListAPIView):
 class Appointment(generics.CreateAPIView):
     queryset = Appointment.objects.all()
     serializer_class = AppointmentCreateSerialiser
+    permission_classes =[IsAuthenticated]
 
-    def post(self,request,pk):
-        user = request.user
-
-        if user.role != 'patient':
-            return Response({'Unauthorized':'You are not a valid user'},status=status.HTTP_403_FORBIDDEN)
-        doctor = Doctor.objects.get(id=pk)
-        model= self.get_queryset(doctor)
-        serialiser = self.get_serializer(model)
-        return Response(serialiser.data,)
+# need to add more permission and control by customising the methods 
+# only patients can make appointments , to only doctors , if doctors have 5 appointments no more appointments can  be made try again tommorow
+# Also figure out how to delete all appointments automatically in 24 hours 
+# send medical report as a pdf calling it prescribtion in the user's email
+ 
+ ### minimum tasks for tommorow.

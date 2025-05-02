@@ -35,7 +35,7 @@ class PatientHomepageSerialiser(serializers.ModelSerializer):
 class AppointmentCreateSerialiser(serializers.ModelSerializer):
     class Meta:
         model = models.Appointment
-        fields ='__all__'
+        fields =['doctor','notes']
 
     def create(self, validated_data):
         user = self.context['request'].user
