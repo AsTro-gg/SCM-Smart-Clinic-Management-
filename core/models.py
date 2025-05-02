@@ -9,6 +9,7 @@ class User(AbstractUser):
         ('doctor','Doctor'),
         ('patient','Patient')
     ]
+    photo = models.ImageField(upload_to='user/')
     email = models.EmailField(unique=True)
     address = models.CharField(max_length=300)
     contacts = models.IntegerField()

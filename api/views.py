@@ -2,11 +2,14 @@ from django.shortcuts import render
 from rest_framework import generics
 from core.models import *
 from .serialisers import *
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view,permission_classes
 from django.contrib.auth import authenticate
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.authtoken.models import Token
+from django.shortcuts import get_object_or_404
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
 # Create your views here.
 
 class UserRegisterView(generics.CreateAPIView):
@@ -25,3 +28,65 @@ def login(request):
 
     token, _ = Token.objects.get_or_create(user=user)
     return Response({'token': token.key, 'role': user.role}, status=status.HTTP_200_OK)
+
+class DoctorHomepage(generics.ListAPIView):
+    queryset = Appointment.objects.all()
+    serializer_class = DoctorAppointmentSerialiser
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role !='doctor':
+            return Appointment.objects.none()
+        return Appointment.objects.filter(doctor=user)
+
+        
+class DoctorAppointmentCompleted(generics.GenericAPIView):
+    queryset = Appointment.objects.all()
+    permission_classes =[IsAuthenticated]
+    
+    def delete(self, request,pk, *args, **kwargs):
+        if request.user.role != 'doctor':
+            return Response({'Unauthorized':'You are not authorized'},status=status.HTTP_403_FORBIDDEN)
+        deleting_object = get_object_or_404(Appointment,id=pk)
+
+        if deleting_object.doctor != request.user:
+            return Response({'Unauthorized':'This is not your Appointment'},status=status.HTTP_403_FORBIDDEN)
+        
+        deleting_object.delete()
+        return Response({"Deleted":"No Content"},status=status.HTTP_204_NO_CONTENT)
+    
+class BasePatientHistoryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self, pk=None):
+        """
+        This method will be overridden in child classes.
+        By default, returns all medical reports.
+        """
+        return MedicalReport.objects.all()
+
+    def get(self, request, pk=None):
+        """
+        Base method for fetching patient history.
+        This method can be inherited and overridden.
+        """
+        queryset = self.get_queryset(pk)
+        serializer = PatientHistorySerialiser(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class DoctorPatientHistoryView(BasePatientHistoryView):
+    def get_queryset(self, pk):
+        """
+        For the doctor, show all medical reports for the specified patient.
+        """
+        return MedicalReport.objects.filter(appointment__patient__id=pk)
+    
+
+class PatientHistoryView(BasePatientHistoryView):
+    def get_queryset(self, pk):
+        """
+        For the patient, show only their own medical records.
+        """
+        return MedicalReport.objects.filter(appointment__patient__id=pk)

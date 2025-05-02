@@ -17,5 +17,13 @@ class UserSerialiser(serializers.ModelSerializer):
         )
         return user
     
+class DoctorAppointmentSerialiser(serializers.ModelSerializer):
+    class Meta:
+        model = models.Appointment
+        fields = '__all__'
 
+class PatientHistorySerialiser(serializers.ModelSerializer):
+    class Meta:
+        model = models.MedicalReport
+        fields ='__all__'
 
