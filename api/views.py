@@ -85,8 +85,27 @@ class DoctorPatientHistoryView(BasePatientHistoryView):
     
 
 class PatientHistoryView(BasePatientHistoryView):
-    def get_queryset(self, pk):
-        """
-        For the patient, show only their own medical records.
-        """
-        return MedicalReport.objects.filter(appointment__patient__id=pk)
+    def get_queryset(self,pk):
+        return MedicalReport.objects.filter(appointment__patient__id=self.request.user.id)
+
+# In doctor i need dynamic url because i want to get the reports of the patient which is selected or searched for but 
+#patients can only see their own. so no dynamic url
+
+class PatientHomepage(generics.ListAPIView):
+    queryset =  Doctor.objects.all()
+    serializer_class = PatientHomepageSerialiser
+    permission_classes = [IsAuthenticated]
+
+class Appointment(generics.CreateAPIView):
+    queryset = Appointment.objects.all()
+    serializer_class = AppointmentCreateSerialiser
+
+    def post(self,request,pk):
+        user = request.user
+
+        if user.role != 'patient':
+            return Response({'Unauthorized':'You are not a valid user'},status=status.HTTP_403_FORBIDDEN)
+        doctor = Doctor.objects.get(id=pk)
+        model= self.get_queryset(doctor)
+        serialiser = self.get_serializer(model)
+        return Response(serialiser.data,)

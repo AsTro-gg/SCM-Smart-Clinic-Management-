@@ -27,3 +27,17 @@ class PatientHistorySerialiser(serializers.ModelSerializer):
         model = models.MedicalReport
         fields ='__all__'
 
+class PatientHomepageSerialiser(serializers.ModelSerializer):
+    class Meta:
+        model = models.Doctor
+        fields = '__all__'
+
+class AppointmentCreateSerialiser(serializers.ModelSerializer):
+    class Meta:
+        model = models.Appointment
+        fields ='__all__'
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        validated_data['patient']=user
+        return super().create(validated_data)

@@ -11,8 +11,9 @@ urlpatterns = [
     path('doctor-appointment-completed/<int:pk>/',DoctorAppointmentCompleted.as_view(),name='DoctorAppointmentComplete'),
     path('doctor-patient-history/<int:pk>/',DoctorPatientHistoryView.as_view(),name='DoctorPatientHistory'),
 
-    #Patient Homepage
-    path('patient-history/<int:pk>/',PatientHistoryView.as_view(),name='PatientHistory'),
+    #Patient Homepage  
+    path('patient-homepage/',PatientHomepage.as_view(),name='PatientHomepage'),
+    path('patient-history/',PatientHistoryView.as_view(),name='PatientHistory'),
 
 
 ]
