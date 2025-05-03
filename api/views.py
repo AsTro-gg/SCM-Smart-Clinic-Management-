@@ -3,7 +3,7 @@ from rest_framework import generics
 from core.models import *
 from .serialisers import *
 from rest_framework.decorators import api_view,permission_classes
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate,login as django_login
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.authtoken.models import Token
@@ -29,18 +29,22 @@ def login(request):
     email = request.data.get('email')
     password = request.data.get('password')
 
-    user = authenticate(username=email, password=password)
+    # Authenticate the user using email (not username)
+    user = authenticate(request, username=email, password=password)
 
     if user is None:
         return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
-    token, _ = Token.objects.get_or_create(user=user)
-    return Response({'token': token.key, 'role': user.role}, status=status.HTTP_200_OK)
+    # Log the user in
+    django_login(request, user)  # Use Django's built-in login function to start the session
 
+    return Response({'message': 'Login successful'}, status=status.HTTP_200_OK)
+
+    return Response({'message': 'Login successful'}, status=status.HTTP_200_OK)
 class DoctorHomepage(generics.ListAPIView):
     queryset = Appointment.objects.all()
     serializer_class = DoctorAppointmentSerialiser
-    permission_classes = []
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return Appointment.objects.filter(doctor=self.request.user)

@@ -4,7 +4,10 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    fetch("/api/doctor-appointment/")  // This is the API call
+    fetch("/api/doctor-appointment/", {
+        method: "GET", // Specify GET request
+        credentials: "same-origin"  // Ensure the session cookie is sent with the request
+    })
     .then(response => response.json())       // Convert the response to JSON
     .then(data => {
         const container = document.getElementById("appointments-container");
@@ -13,12 +16,12 @@ document.addEventListener("DOMContentLoaded", function() {
             container.innerHTML = "<p>No appointments today.</p>";
         } else {
             data.forEach(app => {
-                const card = 
+                const card = `
                     <div class="card">
                         <h3>${app.patient}</h3>
                         <p>Notes: ${app.notes}</p>
                     </div>
-                ;
+                `;
                 container.innerHTML += card;
             });
         }

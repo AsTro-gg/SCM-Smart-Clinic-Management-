@@ -3,7 +3,7 @@ from .views import *
 urlpatterns = [
     # login and register
     path('register/',UserRegisterView.as_view(),name='register'),
-    path('login/',login,name='login'),
+    path('login/',login,name='login_api'),
     
 
     # Doctor Homepage

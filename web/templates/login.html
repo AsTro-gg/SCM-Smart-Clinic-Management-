@@ -1,0 +1,56 @@
+<!-- templates/web/login.html -->
+<h2>Login</h2>
+
+<form id="login-form">
+    {% csrf_token %}
+    <label for="email">Email</label>
+    <input type="email" id="email" name="email" required>
+
+    <label for="password">Password</label>
+    <input type="password" id="password" name="password" required>
+
+    <button type="submit">Login</button>
+</form>
+
+<script>
+document.getElementById('login-form').addEventListener('submit', function(event) {
+    event.preventDefault(); // Prevent default form submission
+
+    const formData = new FormData(this);
+    const email = formData.get('email');
+    const password = formData.get('password');
+
+    // Create the payload for the request
+    const data = {
+        email: email,
+        password: password,
+    };
+
+    // Get the CSRF token from the form
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    // Use fetch to send the POST request
+    fetch("{% url 'login_api' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',  // Ensure the content type is JSON
+            'X-CSRFToken': csrfToken,  // Include CSRF token in the request
+        },
+        body: JSON.stringify(data),  // Send data as JSON
+        credentials: 'same-origin'  // Important for session authentication (includes session cookie)
+    })
+    .then(response => {
+        if (response.ok) {
+            // Successful login, redirect to doctor's homepage or another page
+            window.location.href = '/web/doctor/homepage/';
+        } else {
+            // Show an error message if login fails
+            alert('Login failed. Please check your credentials.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again later.');
+    });
+});
+</script>
