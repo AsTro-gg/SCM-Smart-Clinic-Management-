@@ -1,0 +1,30 @@
+<!-- templates/web/doctor_home.html -->
+<h2>Today's Appointments</h2>
+<div id="appointments-container"></div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    fetch("/api/doctor-appointment/")  // This is the API call
+    .then(response => response.json())       // Convert the response to JSON
+    .then(data => {
+        const container = document.getElementById("appointments-container");
+
+        if (data.length === 0) {
+            container.innerHTML = "<p>No appointments today.</p>";
+        } else {
+            data.forEach(app => {
+                const card = 
+                    <div class="card">
+                        <h3>${app.patient}</h3>
+                        <p>Notes: ${app.notes}</p>
+                    </div>
+                ;
+                container.innerHTML += card;
+            });
+        }
+    })
+    .catch(error => {
+        console.error("Error fetching appointments:", error);
+    });
+});
+</script>

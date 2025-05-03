@@ -40,7 +40,7 @@ def login(request):
 class DoctorHomepage(generics.ListAPIView):
     queryset = Appointment.objects.all()
     serializer_class = DoctorAppointmentSerialiser
-    permission_classes = [IsAuthenticated,DjangoModelPermissions]
+    permission_classes = []
 
     def get_queryset(self):
         return Appointment.objects.filter(doctor=self.request.user)
