@@ -8,14 +8,22 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from django.shortcuts import get_object_or_404
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated,DjangoModelPermissions
 from rest_framework.views import APIView
+from django.contrib.auth.models import Group
 # Create your views here.
 
 class UserRegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerialiser
 
+    def perform_create(self, serializer):
+        user = serializer.save()
+        role = serializer.validated_data.get('role')
+        if role:
+            group ,_ = Group.objects.get_or_create(name = role)
+            user.groups.add(group)
+    
 @api_view(['POST'])
 def login(request):
     email = request.data.get('email')
@@ -32,18 +40,16 @@ def login(request):
 class DoctorHomepage(generics.ListAPIView):
     queryset = Appointment.objects.all()
     serializer_class = DoctorAppointmentSerialiser
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,DjangoModelPermissions]
 
     def get_queryset(self):
-        user = self.request.user
-        if user.role !='doctor':
-            return Appointment.objects.none()
-        return Appointment.objects.filter(doctor=user)
+        return Appointment.objects.filter(doctor=self.request.user)
+
 
         
 class DoctorAppointmentCompleted(generics.GenericAPIView):
     queryset = Appointment.objects.all()
-    permission_classes =[IsAuthenticated]
+    permission_classes =[IsAuthenticated,DjangoModelPermissions]
     
     def delete(self, request,pk, *args, **kwargs):
         if request.user.role != 'doctor':
@@ -57,7 +63,7 @@ class DoctorAppointmentCompleted(generics.GenericAPIView):
         return Response({"Deleted":"No Content"},status=status.HTTP_204_NO_CONTENT)
     
 class BasePatientHistoryView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,DjangoModelPermissions]
 
     def get_queryset(self, pk=None):
         """
@@ -77,29 +83,93 @@ class BasePatientHistoryView(APIView):
 
 
 class DoctorPatientHistoryView(BasePatientHistoryView):
-    def get_queryset(self, pk):
+    def get_queryset(self, pk=None):  # Make pk optional
         """
         For the doctor, show all medical reports for the specified patient.
         """
-        return MedicalReport.objects.filter(appointment__patient__id=pk)
-    
+        if pk is not None:
+            return MedicalReport.objects.filter(appointment__patient__id=pk)
+        return MedicalReport.objects.none()  # Return empty queryset if no pk
+
+    def post(self, request, pk=None):
+        # Existing post logic remains unchanged
+        appointment_verification = Appointment.objects.filter(
+            doctor=request.user, 
+            patient=request.data.get('patient')
+        ).exists()
+        
+        if appointment_verification:
+            serialiser = PatientHistorySerialiser(data=request.data)
+            if serialiser.is_valid():
+                serialiser.save()
+                return Response(serialiser.data, status=201)
+            return Response(serialiser.errors, status=400)
+        elif appointment_verification == False:
+            return Response(
+                {'Empty':'Enter a patient id'},status=400
+            )
+        else:
+            return Response(
+                {'Unauthorized': 'Only Appointed doctors can create reports'}, 
+                status=403
+            )
 
 class PatientHistoryView(BasePatientHistoryView):
-    def get_queryset(self,pk):
-        return MedicalReport.objects.filter(appointment__patient__id=self.request.user.id)
+    def get_queryset(self, pk=None):  # Make pk optional (even though we don't use it)
+        """
+        Fetch medical reports for the currently logged-in user (patient).
+        """
+        return MedicalReport.objects.filter(
+            appointment__patient__id=self.request.user.id
+        )
 
 # In doctor i need dynamic url because i want to get the reports of the patient which is selected or searched for but 
 #patients can only see their own. so no dynamic url
 
-class PatientHomepage(generics.ListAPIView):
+class PatientHomepage(generics.GenericAPIView):
     queryset =  Doctor.objects.all()
     serializer_class = PatientHomepageSerialiser
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,DjangoModelPermissions]
 
-class Appointment(generics.CreateAPIView):
+    def get(self,request):
+        if request.user.role == 'patient':
+            doctor = self.get_queryset()
+            serializers =self.get_serializer(doctor,many = True)
+            return Response(serializers.data,status=200)
+        return Response({'Unauthorized':'You are not a valid user'},status=403)
+
+
+class AppointmentPatient(generics.GenericAPIView):
     queryset = Appointment.objects.all()
     serializer_class = AppointmentCreateSerialiser
-    permission_classes =[IsAuthenticated]
+    permission_classes = [IsAuthenticated,DjangoModelPermissions]
+
+    def get_queryset(self):
+        return Appointment.objects.filter(patient=self.request.user)
+
+    def get(self, request):
+        if request.user.role == 'patient':
+            appointments = self.get_queryset()
+            serializer = self.get_serializer(appointments, many=True)
+            return Response(serializer.data, status=200)
+        return Response({'Unauthorized':'You are not a valid user'},status=400)
+    
+    def post(self,request):
+        serialiser = self.get_serializer(data = request.data)
+        if serialiser.is_valid():
+            serialiser.save()
+            return Response(serialiser.data,status=201)
+        return Response(serialiser.errors,status=400)
+
+
+
+
+
+
+
+
+    
+
 
 # need to add more permission and control by customising the methods 
 # only patients can make appointments , to only doctors , if doctors have 5 appointments no more appointments can  be made try again tommorow

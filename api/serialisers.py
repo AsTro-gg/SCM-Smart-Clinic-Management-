@@ -23,9 +23,12 @@ class DoctorAppointmentSerialiser(serializers.ModelSerializer):
         fields = '__all__'
 
 class PatientHistorySerialiser(serializers.ModelSerializer):
+
+
     class Meta:
         model = models.MedicalReport
         fields ='__all__'
+
 
 class PatientHomepageSerialiser(serializers.ModelSerializer):
     class Meta:
@@ -33,9 +36,14 @@ class PatientHomepageSerialiser(serializers.ModelSerializer):
         fields = '__all__'
 
 class AppointmentCreateSerialiser(serializers.ModelSerializer):
+    patient = serializers.SerializerMethodField()
+
     class Meta:
         model = models.Appointment
-        fields =['doctor','notes']
+        fields =['doctor','notes','patient']
+
+    def get_patient(self,obj):
+        return obj.patient.username
 
     def create(self, validated_data):
         user = self.context['request'].user
